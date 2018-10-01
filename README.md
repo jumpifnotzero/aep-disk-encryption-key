@@ -1,16 +1,10 @@
 # AEP Disk Encryption Key
-This project documents the algorithm used to derive the Disk Encryption Key that protects information in the AEP PKCS#11 local token store.
-
-The Disk Encryption Key (DEK) is a 168-bit symmetric key derived from the PIN. A modified PBKDF2 algorithm is used to produce the 168-bits needed for the key.
-
-Readers should be familiar with AEP HSMs and [PBKDF2](https://en.wikipedia.org/wiki/PBKDF2).
+This project documents the algorithm used to derive the Disk Encryption Key that protects information in the AEP PKCS#11 local token store. The Disk Encryption Key (DEK) is a 168-bit symmetric key derived from the PIN. A modified PBKDF2 algorithm is used to produce the 168-bits needed for the key. Readers should be familiar with AEP HSMs and [PBKDF2](https://en.wikipedia.org/wiki/PBKDF2).
 
 ## PIN
 The User and SO PINs are stored in the &lt;token&gt;.config.db file. The machine file describes the location of this token file for a specific slot.
 
-PINs are stored using one SHA-1 hash round without a salt. PIN recovery requires finding the correct character sequence that provides a matching hash.
-
-The example below shows the contents of the file with User and SO PINs of "1234" and "5678" respectively.
+PINs are stored using one SHA-1 hash round without a salt. PIN recovery requires finding the correct character sequence that provides a matching hash. The example below shows the contents of the file with User and SO PINs of "1234" and "5678" respectively.
 ```
 256,@UserAuthenicationToken@,@7110EDA4D09E062AA5E4A390B0A572AC0D2C0220@
 256,@SOAuthenticationToken@,@2ABD55E001C524CB2CF6300A89CA6366848A77D5@
