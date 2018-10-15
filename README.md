@@ -58,11 +58,11 @@ Given the disk encryption key we can look into the data in the token store. The 
 
 Decrypting the value in Column 3 gives a character-string that has the following format:
 ```
-  magic-number | ???? | key-size | identifier | ????????????
+  column-3 = magic-number | ???? | key-size | identifier | key-policy
 ```
 The magic number is 0xffffffff. Question marks represent octets of unknown significance. The identifier is a value transmitted over-the-wire to the HSM when using this key. The identifier is further described as:
 ```
-  date-time | sequence | serial | % | pkcs11-label
+  identifier = date-time | sequence | serial | % | pkcs11-label
 ```
 The date-time field is the time the key was created as measured by the HSM. The date-time is the hexadecimal representation of the decimal value of each component, i.e. 2018-02-26 02:21:51 = 0x07E2021A 021533. The 2-octet sequence field prevents identifier collisions. The serial is the hexadecimal encoding of the HSM's serial number, i.e. K0701001 = 4B30373031303031. The pkcs11-label is the first seven octets of the label, or a label null-padded to seven octets.
 
