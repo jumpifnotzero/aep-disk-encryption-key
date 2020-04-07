@@ -24,19 +24,19 @@ Decrypting the value in third column reveals the following information:
 ```
   column-3 = magic-number | ???? | key-size | identifier | key-policy
 ```
-The magic number is 0xffffffff. Question marks represent octets of unknown significance. The identifier is the value transmitted over-the-wire to the HSM to identify this key. 
+The magic number is 0xffffffff. Question marks represent bytes of unknown significance. The identifier is the value transmitted over-the-wire to the HSM to identify this key. 
 
 The identifier is further encoded as:
 ```
   identifier = date-time | ?? | serial | '%' | pkcs11-label
 ```
-The date-time field is the time the key was created as reported by the HSM. The date-time is the concatenation of the hexadecimal representation of each of date-time component, i.e. 2018 is 0x07E2 and 2018-02-26 02:21:51 is 0x07E2021A021533. The 2-octet unknown field is assumed to be a sequence used to prevent identifier collisions for keys generated at the same time. The serial is the hexadecimal encoding of the HSM's serial number, i.e. K0701001 = 4B30373031303031. The pkcs11-label is the first seven bytes of the user label, null-padded if required.
+The date-time field is the time the key was created as reported by the HSM. The date-time is the concatenation of the hexadecimal representation of each of date-time component, i.e. 2018 is 0x07E2 and 2018-02-26 02:21:51 is 0x07E2021A021533. The 2-byte unknown field is assumed to be a sequence used to prevent identifier collisions for keys generated at the same time. The serial is the hexadecimal encoding of the HSM's serial number, i.e. K0701001 = 4B30373031303031. The pkcs11-label is the first seven bytes of the user label, null-padded if required.
 
 The key-policy defines attributes such as the allowed functions (e.g. sign, encrypt, export) and is further described as:
 ```
   key-policy = version | algorithm | flags
 ```
-The (assumed) version must be 0x0002. The algorithm is a 2-octet sequence having the following known values:
+The (assumed) version must be 0x0002. The algorithm is a 2-byte sequence having the following known values:
 - 0x0001 = RSA
 - 0x0016 = 3DES
 
