@@ -40,10 +40,24 @@ The (assumed) version must be 0x0002. The algorithm is a 2-byte sequence having 
 - 0x0001 = RSA
 - 0x0016 = 3DES
 
-The flags is a 6-byte sequence with the following known values:
-flags + 1 Encypher 1 (public) Decypher 2 (private) CanMacGen 4 CanMacVer 8 Sign 10 (private) Verify Sig 20 (public) Import 40 (public/private) Export 80 (public/private)
-flags + 4 DecryptKeys 1 (private) EncryptKeys 2 (public)
-flags + 5 04 token
+The flags is a 6-byte sequence with the following values:
+
+The second byte:
+- 0b00000001 Encypher
+- 0b00000010 Decypher
+- 0b00000100 CanMacGen
+- 0b00001000 CanMacVer
+- 0b00010000 Sign
+- 0b00100000 Verify Signature
+- 0b01000000 Import
+- 0b10000000 Export
+
+The fifth byte:
+- 0b00000001 DecryptKeys
+- 0b00000010 EncryptKeys
+
+The sixth byte:
+- 0b00000100 Token
 
 ### PIN recovery
 The User and SO PINs are stored in the keymap config file (keymap.config.db) using one SHA-1 hash round without a salt. The snippet below shows the relevant lines of a keymap config file with User and SO PINs of "1234" and "5678" respectively.
