@@ -1,4 +1,26 @@
+import csv
 import hashlib
+
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import padding
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+
+
+def keymap(stream, pin):
+    cipher = Cipher(algorithms.TripleDES(derive_dek(pin)), modes.CBC(bytes(8)), backend=default_backend())
+    for row in csv.reader(stream, delimiter=',', quotechar='@'):
+
+        label = row[10]
+        identifier = None
+
+        if len(row[2]) > 0:
+            decryptor = cipher.decryptor()
+            data = decryptor.update(bytes.fromhex(row[2])) + decryptor.finalize()
+
+            unpadder = padding.PKCS7(64).unpadder()
+            identifier = unpadder.update(data) + unpadder.finalize()
+
+        yield label, identifier
 
 
 def derive_dek(pin):
@@ -83,12 +105,12 @@ def set_odd_parity(buf):
 
 if __name__ == '__main__':
     import sys
-    import pyDes
 
-    if len(sys.argv) != 3:
-        print(f"Usage: {sys.argv[0]:s} pin encrypted-hex-value")
+    if len(sys.argv) != 2:
+        print(f"Usage: {sys.argv[0]:s} pin")
         exit(1)
 
-    key = derive_dek(sys.argv[1].encode())
-    des = pyDes.triple_des(key, mode=pyDes.CBC, IV=bytes(8), padmode=pyDes.PAD_PKCS5)
-    print(des.decrypt(bytes.fromhex(sys.argv[2])))
+    pin = sys.argv[1].encode()
+
+    for label, identifier in keymap(sys.stdin, pin):
+        print(f"label: {label} identifier: {identifier}")

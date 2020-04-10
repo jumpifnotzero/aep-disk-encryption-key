@@ -67,17 +67,8 @@ The User and SO PINs are stored in the keymap config file (keymap.config.db) usi
 ```
 
 ### Example code
-keyper.py provides a function to derive the disk encryption key from a supplied PIN. When run as a main program, keyper.py uses PyDes to decrypt a user-supplied value.
+keyper.py provides a function to derive the disk encryption key from a supplied PIN. When run as a main program, keyper.py uses the cryptography package to decrypt rows of a keymap file via stdin.
 
 ```bash
-  python3 keyper.py [pin] [encrypted-value]
-```
-
-Alternatively, OpenSSL can decrypt the data in the token store given a key in hexadecimal. The following decrypts the first row of a specified token store.
-```bash
-  head -n 1 keymap.db \
-    | cut -f3 -d',' \
-    | tr -d '@' \
-    | xxd -r -p \
-    | openssl enc -d -des-ede3-cbc -K <key> -iv 0000000000000000
+  python3 keyper.py [pin] < keymap.db
 ```
