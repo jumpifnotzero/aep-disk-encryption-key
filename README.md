@@ -22,25 +22,31 @@ Parity bits can be added to produce a 192-bit key-value that can be imported int
 ### Encrypted data
 Decrypting the value in third column reveals the following information:
 ```
-  column-3 = magic-number | ???? | key-size | identifier | key-policy
+  column-3 = 0xFFFFFFFF | ???? | key-size | identifier | key-policy
 ```
-The magic number is 0xffffffff. Question marks represent bytes of unknown significance. The identifier is the value transmitted over-the-wire to the HSM to identify this key. 
+Question marks represent bytes of unknown significance.
 
-The identifier is further encoded as:
+The identifier is the value transmitted over-the-wire to the HSM to identify this key and is further encoded as:
 ```
-  identifier = date-time | ?? | serial | '%' | pkcs11-label
+  identifier = date-time | sequence | serial | '%' | pkcs11-label
 ```
-The date-time field is the time the key was created as reported by the HSM. The date-time is the concatenation of the hexadecimal representation of each of date-time component, i.e. 2018 is 0x07E2 and 2018-02-26 02:21:51 is 0x07E2021A021533. The 2-byte unknown field is assumed to be a sequence used to prevent identifier collisions for keys generated at the same time. The serial is the hexadecimal encoding of the HSM's serial number, i.e. K0701001 = 4B30373031303031. The pkcs11-label is the first seven bytes of the user label, null-padded if required.
+The date-time field is the date and time the key was created as reported by the HSM. The date-time is the concatenation of the hexadecimal representation of each of date-time component, i.e. 0x07E2 is 2018 and 0x07E2021A021533 is 2018-02-26 02:21:51.
+
+The sequence field is a two byte value used to prevent identifier collisions for keys created at the same time. The sequence value is always 0 for the first key created at a specific time. Additional keys created at that same time will have a non-zero value derived from a global generator (i.e. the value is not associated with the time of creation).
+
+The serial is the hexadecimal encoding of the HSM's serial number, i.e. K0701001 = 4B30373031303031.
+
+The pkcs11-label is the first seven bytes of the user label, null-padded if required.
 
 The key-policy defines attributes such as the allowed functions (e.g. sign, encrypt, export) and is further described as:
 ```
   key-policy = version | algorithm | flags
 ```
-The (assumed) version must be 0x0002. The algorithm is a 2-byte sequence having the following known values:
+The version must be 0x0002. The algorithm is a two byte sequence having the following known values:
 - 0x0001 = RSA
 - 0x0016 = 3DES
 
-The flags is a 6-byte sequence with the following values:
+The flags is a six byte sequence with the following values:
 
 The second byte:
 - 0b00000001 Encypher
@@ -67,7 +73,7 @@ The User and SO PINs are stored in the keymap config file (keymap.config.db) usi
 ```
 
 ### Example code
-keyper.py provides a function to derive the disk encryption key from a supplied PIN. When run as a main program, keyper.py uses the cryptography package to decrypt rows of a keymap file via stdin.
+keyper.py provides a function to derive the disk encryption key from a supplied PIN. When run as a main program, keyper.py uses the cryptography package to decrypt rows of a keymap file provided via stdin.
 
 ```bash
   python3 keyper.py [pin] < keymap.db
