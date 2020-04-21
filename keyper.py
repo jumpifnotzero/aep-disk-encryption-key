@@ -1,12 +1,27 @@
+from collections import namedtuple
 import csv
+import datetime
 import hashlib
+import struct
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 
+KeyPolicy = namedtuple('KeyPolicy', 'version algorithm flags')
+Identifier = namedtuple('Identifier', 'date sequence serial label')
+
+
 def keymap(stream, pin):
+    """
+    A generator that returns the label and decrypted data for each entry in a keymap file.
+    Public key entries do not have encrypted data; instead None is returned.
+    The decrypted data will be corrupt if the supplied pin is incorrect.
+    :param Iterator stream: iterator that returns keymap.db entries
+    :param bytes pin: the pin protecting the encrypted data
+    :rtype: (str, bytes)
+    """
     cipher = Cipher(algorithms.TripleDES(derive_dek(pin)), modes.CBC(bytes(8)), backend=default_backend())
     for row in csv.reader(stream, delimiter=',', quotechar='@'):
 
@@ -23,21 +38,38 @@ def keymap(stream, pin):
         yield label, identifier
 
 
+def decode(data):
+    """
+    Decodes the decrypted data into its components.
+    :param bytes data: the decrypted data to decode
+    :rtype: (int, Identifier, KeyPolicy)
+    :raises: Exception:
+    """
+    magic, _, key_size, date, serial, label, key_policy = struct.unpack('>IHI18s16sx7s12s', data)
+    if magic != 0xFFFFFFFF:
+        raise Exception("Invalid data")
+
+    year, month, day, hour, minute, second, sequence = struct.unpack('>HBBBBBH', bytes.fromhex(date.decode()))
+    date = datetime.datetime(year, month, day, hour, minute, second)
+    version, algorithm, flags = struct.unpack('>HH8s', key_policy)
+    return key_size, Identifier(date, sequence, bytes.fromhex(serial.decode()), label), KeyPolicy(version, algorithm, flags)
+
+
 def derive_dek(pin):
     """
-    Returns a 192-bit key derived from the given pin.
-    The effective key is 168-bits, suitable for 3-DES (3 independent 56-bit keys).
-    :param pin: bytes
-    :return: bytearray
+    Returns a 168-bit key derived from the given pin.
+    The length of the return value is 192-bits; the 168-bit key with parity bits suitable for TripleDES.
+    :param bytes pin: the pin
+    :rtype: bytearray
     """
     return set_odd_parity(expand(hashlib.pbkdf2_hmac('SHA1', pin, salt(pin), 10, 0x15)))
 
 
 def salt(pin):
     """
-    Returns a salt given a pin.
-    :param pin: str
-    :return: bytes
+    Returns a salt given the supplied pin.
+    :param bytes pin: the pin
+    :rtype: bytes
     """
     m = hashlib.sha1()
     m.update(b'\x55\x55\x55\x55\x55\x55\x55\x55')
@@ -50,10 +82,10 @@ def salt(pin):
 
 def expand(buf):
     """
-    Returns a bytearray containing the contents of buf expanded with a parity bit on each byte.
+    Returns a new bytearray containing the contents of buf expanded with space for parity bit on each byte.
     The parity bit is not set and is always zero.
-    :param buf: sequence of bytes
-    :return: bytearray
+    :param bytes buf: 168-bit key
+    :rtype: bytearray
     """
     out = bytearray(24)
 
@@ -90,9 +122,9 @@ def expand(buf):
 def set_odd_parity(buf):
     """
     Modifies the supplied bytearray to set odd parity on the last bit of each byte.
-    This function requires the last (parity) bit is set to zero.
-    :param buf: bytearray
-    :return: bytearray
+    This function requires the last (parity) bit is zero.
+    :param bytearray buf: a 192-bit buffer containing a 168-bit key
+    :rtype: bytearray
     """
     for i in range(0, len(buf)):
         v = buf[i]
@@ -113,4 +145,5 @@ if __name__ == '__main__':
     pin = sys.argv[1].encode()
 
     for label, identifier in keymap(sys.stdin, pin):
-        print(f"label: {label} identifier: {identifier}")
+        if identifier:
+            print(f"{label:s} {decode(identifier)}")
